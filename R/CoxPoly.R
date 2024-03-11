@@ -21,7 +21,7 @@
 
 CoxPoly <- function(data, time_start, time_end, status, exposure, degree, latency){
   # extract time-varying exposures
-  X <- sim_data[,exposure]
+  X <- data[,exposure]
   X <- as.matrix(X)
 
   # create a vector from 0 to latency - 1 to denote time
