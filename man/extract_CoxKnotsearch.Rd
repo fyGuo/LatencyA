@@ -4,12 +4,14 @@
 \alias{extract_CoxKnotsearch}
 \title{This is a function to extract log HR based on the resuls from CoxKnotsearch}
 \usage{
-extract_CoxKnotsearch(fit, lag)
+extract_CoxKnotsearch(fit, lag, latency)
 }
 \arguments{
-\item{fit}{A model from CoxPoly}
+\item{fit}{A model from CoxKnotsearch}
 
 \item{lag}{A value of lag time}
+
+\item{latency}{prespecified latency}
 }
 \value{
 The log HR estimated at that lag time
@@ -25,5 +27,5 @@ exposure <- paste0("lag", 0:19)
 knots_number <- c(3,4,5)
 latency <- 20
 fit <- CoxKnotsearch(sim_data, time_start, time_end, status, exposure, knots_number, latency)
-extract_CoxKnotsearch(fit, 10)
+extract_CoxKnotsearch(fit, 10, latency = latency)
 }

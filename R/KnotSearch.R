@@ -55,7 +55,7 @@ CoxKnotsearch <- function(data, time_start, time_end, status, exposure,
     knot_list <- expand.grid(knot_list)
     for (i in 1:dim(knot_list)[1]){
       knots <- as.numeric(knot_list[i,])
-      spline <- rcspline.eval(0:19, knots = knots, inclx = TRUE)
+      spline <- rcspline.eval(0:(latency-1), knots = knots, inclx = TRUE)
       B[, 2:(j)] <- as.matrix(spline)
 
       Sum_mat <- matrix(NA, nrow = dim(X)[1], ncol = j)
@@ -76,8 +76,9 @@ CoxKnotsearch <- function(data, time_start, time_end, status, exposure,
 
 
 #' This is a function to extract log HR based on the resuls from CoxKnotsearch
-#' @param fit A model from CoxPoly
+#' @param fit A model from CoxKnotsearch
 #' @param lag A value of lag time
+#' @param latency prespecified latency
 #' @return The log HR estimated at that lag time
 #' @export
 #' @examples
@@ -88,8 +89,8 @@ CoxKnotsearch <- function(data, time_start, time_end, status, exposure,
 #' knots_number <- c(3,4,5)
 #' latency <- 20
 #' fit <- CoxKnotsearch(sim_data, time_start, time_end, status, exposure, knots_number, latency)
-#' extract_CoxKnotsearch(fit, 10)
-extract_CoxKnotsearch  <- function(fit, lag) {
+#' extract_CoxKnotsearch(fit, 10, latency = latency)
+extract_CoxKnotsearch  <- function(fit, lag, latency) {
 
   #extract the knots
   knots <- fit[[1]]
@@ -98,10 +99,10 @@ extract_CoxKnotsearch  <- function(fit, lag) {
   coef <- fit[[2]]
 
   # make a function
-  B <- matrix(NA, nrow = 20, ncol = length(knots) )
+  B <- matrix(NA, nrow = latency, ncol = length(knots) )
   # the first column of B matrix is the intercept, and thus, is 1
   B[,1] <- 1
-  spline <- rcspline.eval(0:19, inclx = TRUE, knots = knots)
+  spline <- rcspline.eval(0:(latency-1), inclx = TRUE, knots = knots)
   B[, 2:length(knots)] <- as.matrix(spline)
 
   # the second column of B is the lag time
