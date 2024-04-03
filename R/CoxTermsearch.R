@@ -30,9 +30,9 @@ CoxTermsearch <- function(data, time_start, time_end, status, exposure,
   X <- as.matrix(X)
 
   v <- 0:(latency - 1)
- # generate the B matrix
+  # generate the B matrix
   B <- matrix(NA, nrow = latency, ncol = length(knots)  )
- # the first column of B matrix is the intercept, and thus, is 1
+  # the first column of B matrix is the intercept, and thus, is 1
   B[,1] <- 1
 
   spline <- rcspline.eval(0:(latency-1), knots = knots, inclx = TRUE)
@@ -50,9 +50,8 @@ CoxTermsearch <- function(data, time_start, time_end, status, exposure,
                      status = data[,status],
                      Sum_mat)
 
-  full_model <- coxph(Surv(time_start, time_end, status)~.,
-                      data = temp,
-                   control = coxph.control(timefix = FALSE))
+  full_model <- coxph(Surv(temp$time_start, temp$time_end, temp$status)~Sum_mat,
+                      control = coxph.control(timefix = FALSE))
 
   fit_best <- stepAIC(full_model, direction = "both", trace = FALSE)
 
@@ -82,23 +81,31 @@ extract_CoxTermsearch  <- function(fit, lag, latency, knots) {
   # exlude coefficients with NA estimates
   coef <- coef[!is.na(coef)]
 
-  # check terms that is used in the final model
-  s <- stringr::str_extract(names(coef), "\\d+") %>% as.numeric()
+  # if the selected model contains no predictors, it means that no effect and logHR is 0
+  if (is.null(coef)){
+    log_HR = 0
+  } else {
 
-  # make the B matrix
-  v <- 0:(latency - 1)
-  # generate the B matrix
-  B <- matrix(NA, nrow = latency, ncol = length(knots)  )
-  # the first column of B matrix is the intercept, and thus, is 1
-  B[,1] <- 1
+    # check terms that is used in the final model
+    s <- stringr::str_extract(names(coef), "\\d+") %>% as.numeric()
 
-  spline <- rcspline.eval(0:(latency-1), knots = knots, inclx = TRUE)
-  B[, 2:dim(B)[2]] <- as.matrix(spline)
+    # make the B matrix
+    v <- 0:(latency - 1)
+    # generate the B matrix
+    B <- matrix(NA, nrow = latency, ncol = length(knots)  )
+    # the first column of B matrix is the intercept, and thus, is 1
+    B[,1] <- 1
 
-  # select B columns only selected into the final model
-  B_lag <- B[which(B[,2] == lag), s]
+    spline <- rcspline.eval(0:(latency-1), knots = knots, inclx = TRUE)
+    B[, 2:dim(B)[2]] <- as.matrix(spline)
 
-  log_HR <- t(coef) %*% B_lag
+    # select B columns only selected into the final model
+    B_lag <- B[which(B[,2] == lag), s]
+
+    log_HR <- t(coef) %*% B_lag
+  }
+
+
 
   return(log_HR)
 }
