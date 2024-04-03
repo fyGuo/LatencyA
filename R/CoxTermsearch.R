@@ -79,6 +79,8 @@ CoxTermsearch <- function(data, time_start, time_end, status, exposure,
 
 extract_CoxTermsearch  <- function(fit, lag, latency, knots) {
   coef <- coef(fit)
+  # exlude coefficients with NA estimates
+  coef <- coef[!is.na(coef)]
 
   # check terms that is used in the final model
   s <- stringr::str_extract(names(coef), "\\d+") %>% as.numeric()
