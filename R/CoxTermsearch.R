@@ -78,8 +78,8 @@ CoxTermsearch <- function(data, time_start, time_end, status, exposure,
 
 extract_CoxTermsearch  <- function(fit, lag, latency, knots) {
   coef <- coef(fit)
-  # exlude coefficients with NA estimates
-  coef <- coef[!is.na(coef)]
+  # replace NA with 0 which means the coefficient has no effects
+  coef[!is.na(coef)] <- 0
 
   # if the selected model contains no predictors, it means that no effect and logHR is 0
   if (is.null(coef)){
