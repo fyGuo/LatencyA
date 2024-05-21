@@ -10,7 +10,7 @@
 #' @param status survival status. 1 for death and 0 for censored
 #' @param exposure Name of the time-varying exposure variable. From the most recent to the furthest in time.
 #' @param  knots_number A vector of potential number of knots
-#' @param latency prespecified latency
+#' @param latency pre-specified latency
 #' @return A list. The first element is the best knots with the lowest AIC. The second element is a Cox model
 #' @export
 #' @examples
@@ -22,7 +22,7 @@
 #' latency <- 20
 #' fit <- CoxKnotsearch(sim_data, time_start, time_end, status, exposure, knots_number, latency)
 CoxKnotsearch <- function(data, time_start, time_end, status, exposure,
-                          knots_number, latency) {
+                          knots_number, latency, adjusted_variable = NULL, adjusted_model = NULL) {
   X <- data[,exposure]
   X <- as.matrix(X)
 
@@ -60,8 +60,20 @@ CoxKnotsearch <- function(data, time_start, time_end, status, exposure,
 
       Sum_mat <- matrix(NA, nrow = dim(X)[1], ncol = j)
       Sum_mat <- X %*% B
+      Sum_mat <- as.data.frame(Sum_mat)
+      # then make a data frame to fit the regression
+      regression_data <- cbind(data[,c(time_start, time_end, status,adjusted_variable)],  Sum_mat )
 
-      fit <- coxph(Surv(data[,time_start], data[,time_end], data[,status])~Sum_mat,
+      model <- paste0("Surv(", time_start, ",", time_end, ",", status, ")")
+      # include the cumulative exposure name
+      model <- paste0(model, "~", paste0(colnames(Sum_mat), collapse = "+"))
+
+      # include the adjusted variables if given
+      if (length(adjusted_model) > 0) {model <- paste0(model, "+", adjusted_model)}
+
+
+      fit <- coxph(as.formula(model),
+                   data = regression_data,
                    control = coxph.control(timefix = FALSE))
       AIC <- extractAIC(fit)[2]
       if (AIC < mini_AIC) {

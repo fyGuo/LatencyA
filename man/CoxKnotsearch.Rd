@@ -12,7 +12,9 @@ CoxKnotsearch(
   status,
   exposure,
   knots_number,
-  latency
+  latency,
+  adjusted_variable = NULL,
+  adjusted_model = NULL
 )
 }
 \arguments{
@@ -28,7 +30,7 @@ CoxKnotsearch(
 
 \item{knots_number}{A vector of potential number of knots}
 
-\item{latency}{prespecified latency}
+\item{latency}{pre-specified latency}
 }
 \value{
 A list. The first element is the best knots with the lowest AIC. The second element is a Cox model
