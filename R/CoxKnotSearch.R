@@ -83,7 +83,7 @@ CoxKnotsearch <- function(data, time_start, time_end, status, exposure,
       }
     }
   }
-  list(knots_best, coef(fit_best)) %>% return()
+  list(knots_best, fit_best) %>% return()
 }
 
 
@@ -108,7 +108,11 @@ extract_CoxKnotsearch  <- function(fit, lag, latency) {
   knots <- fit[[1]]
 
   # extract the coefficients
-  coef <- fit[[2]]
+  coef <- coef(fit[[2]])
+
+  # first we want to extract the coefficient for the exposure
+  # we extract the coefficients with "VX", where X stands for numbers
+  coef <- coef[stringr::str_detect(names(coef), "\\bV\\d+\\b")]
 
   # make a function
   B <- matrix(NA, nrow = latency, ncol = length(knots) )

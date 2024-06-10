@@ -19,7 +19,8 @@
 #' fit <- CoxPoly(sim_data, time_start, time_end, status, exposure, degree, latency)
 #' fit
 
-CoxPoly <- function(data, time_start, time_end, status, exposure, degree, latency){
+CoxPoly <- function(data, time_start, time_end, status, exposure, degree, latency, adjusted_variable = NULL,
+                    adjusted_model = NULL){
   # extract time-varying exposures
   X <- data[,exposure]
   X <- as.matrix(X)
@@ -27,15 +28,28 @@ CoxPoly <- function(data, time_start, time_end, status, exposure, degree, latenc
   # create a vector from 0 to latency - 1 to denote time
   v <- 0:(latency - 1)
 
-  # create a matrix for the transformation infromation
+  # create a matrix for the transformation information
   Sum <- rowSums(X)
   Sum_k <- matrix(0, nrow = dim(X)[1], ncol = degree)
   for (k in 1:degree) {
     Sum_k[,k] <- X %*% (v^(k))
   }
+  Sum_k <- data.frame(Sum_k)
+
+  regression_data <- data.frame(data[,c(time_start, time_end, status,adjusted_variable)], Sum, Sum_k)
+
+  names(regression_data)[  names(regression_data) == "Sum"] <- "X0"
 
   # run Cox regression.
-  fit <- coxph(Surv(data[,time_start], data[,time_end], data[,status]) ~ Sum + Sum_k,
+  model <- paste0("Surv(", time_start, ",", time_end, ",", status, ")")
+  # include the cumulative exposure name
+  model <- paste0(model, "~", "X0", "+", paste0(colnames(Sum_k), collapse = "+"))
+
+  # include the adjusted variables if given
+  if (length(adjusted_model) > 0) {model <- paste0(model, "+", adjusted_model)}
+
+  fit <- coxph(as.formula(model),
+               data = regression_data,
                control = coxph.control(timefix = FALSE))
   return(fit)
 }
@@ -57,9 +71,10 @@ CoxPoly <- function(data, time_start, time_end, status, exposure, degree, latenc
 extract_CoxPoly <- function(fit, lag) {
   # extract the coefficients
   coef <- fit$coefficients
+  coef <- coef[stringr::str_detect(names(coef), "\\bX\\d+\\b")]
   K <- length(coef) - 1
 
-  log_HR <- coef[1] + as.matrix(coef[2:length(coef)] %*% lag^(1:K))
+  log_HR <- coef["X0"] + as.matrix(coef[2:length(coef)] %*% lag^(1:K))
   return(log_HR)
 }
 

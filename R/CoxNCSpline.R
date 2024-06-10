@@ -23,7 +23,8 @@
 
 
 
-CoxNCSpline <- function(data, time_start, time_end, status, exposure,knots_number, latency){
+CoxNCSpline <- function(data, time_start, time_end, status, exposure,knots_number, latency,
+                        adjusted_variable = NULL, adjusted_model = NULL){
   # extract time-varying exposures
   X <- data[,exposure]
   X <- as.matrix(X)
@@ -51,11 +52,24 @@ CoxNCSpline <- function(data, time_start, time_end, status, exposure,knots_numbe
    # make a summation matrix
    Sum_mat <- matrix(NA, nrow = dim(X)[1], ncol = knots_number)
    Sum_mat <- X %*% B
+   Sum_mat <- as.data.frame(Sum_mat)
 
+
+   # specify the full model
+   # then make a data frame to fit the regression
+   regression_data <- cbind(data[,c(time_start, time_end, status,adjusted_variable)],  Sum_mat )
+
+   model <- paste0("Surv(", time_start, ",", time_end, ",", status, ")")
+   # include the cumulative exposure name
+   model <- paste0(model, "~", paste0(colnames(Sum_mat), collapse = "+"))
+
+   # include the adjusted variables if given
+   if (length(adjusted_model) > 0) {model <- paste0(model, "+", adjusted_model)}
   # run Cox regression.
-  fit <- coxph(Surv(data[,time_start], data[,time_end], data[,status])~Sum_mat,
+  fit <- coxph(as.formula(model),
+               data = regression_data,
                control = coxph.control(timefix = FALSE))
-  list(knots, coef(fit)) %>% return()
+  list(knots, fit) %>% return()
 }
 
 
@@ -80,7 +94,11 @@ extract_CoxNCSpline  <- function(fit, lag, latency) {
   knots <- fit[[1]]
 
   # extract the coefficients
-  coef <- fit[[2]]
+  coef <- coef(fit[[2]])
+
+  # first we want to extract the coefficient for the exposure
+  # we extract the coefficients with "VX", where X stands for numbers
+  coef <- coef[stringr::str_detect(names(coef), "\\bV\\d+\\b")]
 
   # make a function
   B <- matrix(NA, nrow = latency, ncol = length(knots) )

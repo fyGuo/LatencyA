@@ -28,6 +28,7 @@ status <- "failure"
 exposure <- paste0("lag", 0:19)
 knots <- 0:19
 latency <- 20
-fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency)
-extract_CoxTermsearch(fit, 10, latency = latency, knot = knots)
+fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency,
+adjusted_variable = adjusted_variable, adjusted_model = adjusted_model)
+#' extract_CoxTermsearch(fit, 10, latency = latency, knot = knots)
 }

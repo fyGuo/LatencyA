@@ -18,14 +18,22 @@
 #' time_start <- "age_start"
 #' time_end <- "age_end"
 #' status <- "failure"
-#' exposure <- paste0("lag", 0:19)
-#' knots <- 0:19
-#' latency <- 20
+#' exposure <- paste0("lag", 0:15)
+#' knots <- 0:15
+#' latency <- 16
+#' adjusted_variable <- "L"
+#' adjusted_model <- "L"
 #' fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency)
 
-
+#' #In this example, we will generate a random covariate L and adjust for it in our model
+#' sim_data$L <- rbinom(nrow(sim_data), 1, 0.5)
+#' adjusted_variable <- "L"
+#' adjusted_model <- "L+I(L^2)"
+#' fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency,
+#' adjusted_variable = adjusted_variable, adjusted_model = adjusted_model)
+#' #L is selected into the final model but L^2 was not
 CoxTermsearch <- function(data, time_start, time_end, status, exposure,
-                          knots, latency) {
+                          knots, latency, adjusted_variable = NULL, adjusted_model = NULL) {
   X <- data[,exposure]
   X <- as.matrix(X)
 
@@ -41,16 +49,23 @@ CoxTermsearch <- function(data, time_start, time_end, status, exposure,
   # generate the sum matrix after transformation
   Sum_mat <- matrix(NA, nrow = dim(X)[1], ncol = dim(B)[2])
   Sum_mat <- X %*% B
+  Sum_mat <- as.data.frame(Sum_mat)
 
 
   # specifiy the full model
+  # then make a data frame to fit the regression
+  regression_data <- cbind(data[,c(time_start, time_end, status,adjusted_variable)],  Sum_mat )
 
-  temp <- data.frame(time_start = data[,time_start],
-                     time_end = data[,time_end],
-                     status = data[,status],
-                     Sum_mat)
+  model <- paste0("Surv(", time_start, ",", time_end, ",", status, ")")
+  # include the cumulative exposure name
+  model <- paste0(model, "~", paste0(colnames(Sum_mat), collapse = "+"))
 
-  full_model <- coxph(Surv(temp$time_start, temp$time_end, temp$status)~Sum_mat,
+  # include the adjusted variables if given
+  if (length(adjusted_model) > 0) {model <- paste0(model, "+", adjusted_model)}
+
+
+  full_model <- coxph(as.formula(model),
+                      data = regression_data,
                       control = coxph.control(timefix = FALSE))
 
   fit_best <- stepAIC(full_model, direction = "both", trace = FALSE)
@@ -76,8 +91,23 @@ CoxTermsearch <- function(data, time_start, time_end, status, exposure,
 #' fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency)
 #' extract_CoxTermsearch(fit, 10, latency = latency, knot = knots)
 
+
+#' #In this example, we will generate a random covariate L and adjust for it in our model
+#' sim_data$L <- rbinom(nrow(sim_data), 1, 0.5)
+#' adjusted_variable <- "L"
+#' adjusted_model <- "L+I(L^2)"
+#' fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency,
+#' adjusted_variable = adjusted_variable, adjusted_model = adjusted_model)
+#' #L is selected into the final model but L^2 was not
+#' extract_CoxTermsearch(fit, 10, latency = latency, knot = knots)
+
 extract_CoxTermsearch  <- function(fit, lag, latency, knots) {
   coef <- coef(fit)
+
+  # first we want to extract the coefficient for the exposure
+  # we extract the coefficients with "VX", where X stands for numbers
+  coef <- coef[stringr::str_detect(names(coef), "\\bV\\d+\\b")]
+
   # replace NA with 0 which means the coefficient has no effects
   coef[is.na(coef)] <- 0
 
@@ -87,7 +117,7 @@ extract_CoxTermsearch  <- function(fit, lag, latency, knots) {
   } else {
 
     # check terms that is used in the final model
-    s <- stringr::str_extract(names(coef), "\\d+") %>% as.numeric()
+    s <- stringr::str_extract(names(coef), "\\d+\\b") %>% as.numeric()
 
     # make the B matrix
     v <- 0:(latency - 1)

@@ -5,7 +5,17 @@
 \title{This function implments Stepwise model selection by terms of natural cubic splines in Cox regression for latency analysis
 This is GreadSearching by knots}
 \usage{
-CoxTermsearch(data, time_start, time_end, status, exposure, knots, latency)
+CoxTermsearch(
+  data,
+  time_start,
+  time_end,
+  status,
+  exposure,
+  knots,
+  latency,
+  adjusted_variable = NULL,
+  adjusted_model = NULL
+)
 }
 \arguments{
 \item{data}{A data frame containing the data}
@@ -36,5 +46,8 @@ status <- "failure"
 exposure <- paste0("lag", 0:19)
 knots <- 0:19
 latency <- 20
-fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency)
+adjusted_variable <- "lag29"
+adjusted_model <- "lag29 + I(lag29^2)"
+fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency,
+adjusted_variable = adjusted_variable, adjusted_model = adjusted_model)
 }
