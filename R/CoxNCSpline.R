@@ -96,10 +96,15 @@ extract_CoxNCSpline  <- function(fit, lag, latency) {
   # extract the coefficients
   coef <- coef(fit[[2]])
 
+  # extract the variance-covariance matrix
+  vcov <- vcov(fit[[2]])
+
   # first we want to extract the coefficient for the exposure
   # we extract the coefficients with "VX", where X stands for numbers
   coef <- coef[stringr::str_detect(names(coef), "\\bV\\d+\\b")]
 
+  vcov <- vcov[stringr::str_detect(names(coef), "\\bV\\d+\\b"),
+               stringr::str_detect(names(coef), "\\bV\\d+\\b")]
   # make a function
   B <- matrix(NA, nrow = latency, ncol = length(knots) )
   # the first column of B matrix is the intercept, and thus, is 1
@@ -110,8 +115,9 @@ extract_CoxNCSpline  <- function(fit, lag, latency) {
   # the second column of B is the lag time
   B_lag <- B[which(B[,2] == lag), ]
 
-  log_HR <- t(coef) %*% B_lag
+  log_HR_estimate <- t(coef) %*% B_lag
+  log_HR_var <- t(B_lag) %*% vcov %*% B_lag
 
-  return(log_HR)
+  data.frame(log_HR = log_HR_estimate, log_HR_var = log_HR_var) %>% return()
 }
 

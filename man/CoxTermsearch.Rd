@@ -31,6 +31,10 @@ CoxTermsearch(
 \item{knots}{A vector of prespecified knots}
 
 \item{latency}{prespecified latency}
+
+\item{adjusted_variable}{A vector of adjusted variables}
+
+\item{adjusted_model}{A vector of adjusted models}
 }
 \value{
 A list. The first element is the best knots with the lowest AIC. The second element is a Cox model
@@ -43,11 +47,17 @@ This is GreadSearching by knots
 time_start <- "age_start"
 time_end <- "age_end"
 status <- "failure"
-exposure <- paste0("lag", 0:19)
-knots <- 0:19
-latency <- 20
-adjusted_variable <- "lag29"
-adjusted_model <- "lag29 + I(lag29^2)"
+exposure <- paste0("lag", 0:15)
+knots <- 0:15
+latency <- 16
+adjusted_variable <- "L"
+adjusted_model <- "L"
+fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency)
+#In this example, we will generate a random covariate L and adjust for it in our model
+sim_data$L <- rbinom(nrow(sim_data), 1, 0.5)
+adjusted_variable <- "L"
+adjusted_model <- "L+I(L^2)"
 fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency,
 adjusted_variable = adjusted_variable, adjusted_model = adjusted_model)
+#L is selected into the final model but L^2 was not
 }

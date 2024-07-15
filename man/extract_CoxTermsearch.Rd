@@ -28,7 +28,14 @@ status <- "failure"
 exposure <- paste0("lag", 0:19)
 knots <- 0:19
 latency <- 20
+fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency)
+extract_CoxTermsearch(fit, 10, latency = latency, knot = knots)
+#In this example, we will generate a random covariate L and adjust for it in our model
+sim_data$L <- rbinom(nrow(sim_data), 1, 0.5)
+adjusted_variable <- "L"
+adjusted_model <- "L+I(L^2)"
 fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency,
 adjusted_variable = adjusted_variable, adjusted_model = adjusted_model)
-#' extract_CoxTermsearch(fit, 10, latency = latency, knot = knots)
+#L is selected into the final model but L^2 was not
+extract_CoxTermsearch(fit, 10, latency = latency, knot = knots)
 }

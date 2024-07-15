@@ -4,7 +4,17 @@
 \alias{CoxPoly}
 \title{This is a function to implement polynomial Cox regression for latency analysis}
 \usage{
-CoxPoly(data, time_start, time_end, status, exposure, degree, latency)
+CoxPoly(
+  data,
+  time_start,
+  time_end,
+  status,
+  exposure,
+  degree,
+  latency,
+  adjusted_variable = NULL,
+  adjusted_model = NULL
+)
 }
 \arguments{
 \item{data}{A data frame containing the data}

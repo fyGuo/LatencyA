@@ -11,7 +11,9 @@ CoxNCSpline(
   status,
   exposure,
   knots_number,
-  latency
+  latency,
+  adjusted_variable = NULL,
+  adjusted_model = NULL
 )
 }
 \arguments{
