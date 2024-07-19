@@ -70,12 +70,27 @@ CoxPoly <- function(data, time_start, time_end, status, exposure, degree, latenc
 #' extract_CoxPoly(fit, 10)
 extract_CoxPoly <- function(fit, lag) {
   # extract the coefficients
-  coef <- fit$coefficients
+  # extract the coefficients
+  coef <- coef(fit)
+
+  # extract the variance-covariance matrix
+  vcov <- vcov(fit)
+
   coef <- coef[stringr::str_detect(names(coef), "\\bX\\d+\\b")]
+
+
+  vcov <- vcov[stringr::str_detect(names(coef), "\\bX\\d+\\b"),
+               stringr::str_detect(names(coef), "\\bX\\d+\\b")]
+
   K <- length(coef) - 1
 
-  log_HR <- coef["X0"] + as.matrix(coef[2:length(coef)] %*% lag^(1:K))
-  return(log_HR)
+  B_lag <- c(1,  lag^(1:K))
+
+  log_HR_estimate <- t(coef) %*% B_lag
+  log_HR_var <- t(B_lag) %*% vcov %*% B_lag
+
+
+  data.frame(log_HR = log_HR_estimate, log_HR_var = log_HR_var) %>% return()
 }
 
 

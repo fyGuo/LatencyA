@@ -129,3 +129,73 @@ extract_CoxKnotsearch  <- function(fit, lag, latency) {
   return(log_HR)
 }
 
+#' This function conduct bootstraps for @CoxKnotsearch
+#' @import survival
+#' @import Hmisc
+#' @import dplyr
+#' @import stats
+#' @import future
+#' @import furrr
+#' @importFrom MASS stepAIC
+#' @param data A data frame containing the data
+#' @param time_start start time
+#' @param time_end end time
+#' @param status survival status. 1 for death and 0 for censored
+#' @param exposure Name of the time-varying exposure variable. From the most recent to the furthest in time.
+#' @param knots_number A vector of prespecified knot number
+#' @param latency prespecified latency
+#' @param adjusted_variable A vector of adjusted variables
+#' @param adjusted_model A vector of adjusted models
+#' @param lag A value of lag time
+#' @param parallel A boolean numeric to indicate whether to run the function in parallel
+#' @param boot_iter Number of bootstrap iterations
+#' @param id A string of the column name that contains the subject ID
+#' @return A data.frame. The first column is the mean of log HR. The second column is the variance of log HR
+#' @export
+#' @examples
+#' time_start <- "age_start"
+#' time_end <- "age_end"
+#' status <- "failure"
+#' exposure <- paste0("lag", 0:15)
+#' knots_number <- c(3,4,5)
+#' latency <- 16
+#' adjusted_variable <- "L"
+#' adjusted_model <- "L"
+#' lag <- 2
+#' boot_iter <- 10
+#' id <- "id"
+#' parallel <- TRUE
+#' result <- CoxKnotsearch_boot(sim_data, time_start, time_end, status, exposure, knots_number = knots_number, latency,
+#' lag = lag, parallel = parallel, boot_iter = boot_iter, id = id)
+
+
+CoxKnotsearch_boot  <- function(data, time_start, time_end, status, exposure,
+                                knots_number, latency, adjusted_variable = NULL, adjusted_model = NULL,
+                                lag, parallel = FALSE, boot_iter = 10, id = "id") {
+  ids <- unique(sim_data[,id])
+  if (parallel == FALSE) {
+    log_HR <- numeric(boot_iter)
+    for (i in 1:boot_iter) {
+      boot_ids <- sample(ids, size = length(ids), replace = TRUE)
+      data<-sim_data[ sim_data[,id]  %in% boot_ids,]
+      fit <- CoxKnotsearch(data, time_start, time_end, status, exposure,  knots_number =  knots_number, latency)
+      log_HR[i] <- extract_CoxKnotsearch(fit, lag, latency)
+    }
+
+    data.frame(log_HR = mean(log_HR), log_HR_var = var(log_HR)) %>% return()
+  } else{
+    plan("multicore")
+    log_HR <- furrr::future_map_dbl(1:boot_iter, ~{
+      boot_ids <- sample(ids, size = length(ids), replace = TRUE)
+      data<-sim_data[ sim_data[,id]  %in% boot_ids,]
+      fit <- CoxKnotsearch(data, time_start, time_end, status, exposure, knots_number = knots_number, latency)
+      log_HR <- extract_CoxKnotsearch(fit, lag, latency)
+      return(log_HR)
+    },
+    .options = furrr_options(seed = T))
+
+    data.frame(log_HR = mean(log_HR), log_HR_var = var(log_HR)) %>% return()
+  }
+}
+
+
