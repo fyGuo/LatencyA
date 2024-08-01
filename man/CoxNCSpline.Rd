@@ -13,7 +13,8 @@ CoxNCSpline(
   knots_number,
   latency,
   adjusted_variable = NULL,
-  adjusted_model = NULL
+  adjusted_model = NULL,
+  id = "id"
 )
 }
 \arguments{
@@ -30,6 +31,12 @@ CoxNCSpline(
 \item{knots_number}{Pre-specified number of knots}
 
 \item{latency}{prespecified latency}
+
+\item{adjusted_variable}{A vector of adjusted variables}
+
+\item{adjusted_model}{A vector of adjusted models}
+
+\item{id}{A string to specify the name of the id column}
 }
 \value{
 A list. The first element is the best knots with the lowest AIC. The second element is a Cox model

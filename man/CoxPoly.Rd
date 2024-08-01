@@ -13,7 +13,8 @@ CoxPoly(
   degree,
   latency,
   adjusted_variable = NULL,
-  adjusted_model = NULL
+  adjusted_model = NULL,
+  id = "id"
 )
 }
 \arguments{
@@ -30,6 +31,12 @@ CoxPoly(
 \item{degree}{degree of the polynomial}
 
 \item{latency}{prespecified latency}
+
+\item{adjusted_variable}{A vector of adjusted variables}
+
+\item{adjusted_model}{A vector of adjusted models}
+
+\item{id}{A string to specify the name of the id column}
 }
 \value{
 A Cox model object

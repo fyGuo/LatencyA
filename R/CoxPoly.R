@@ -7,6 +7,9 @@
 #' @param exposure Name of the time-varying exposure variable. From the most recent to the furthest in time.
 #' @param degree degree of the polynomial
 #' @param latency prespecified latency
+#' @param adjusted_variable A vector of adjusted variables
+#' @param adjusted_model A vector of adjusted models
+#' @param id A string to specify the name of the id column
 #' @return A Cox model object
 #' @export
 #' @examples
@@ -20,7 +23,11 @@
 #' fit
 
 CoxPoly <- function(data, time_start, time_end, status, exposure, degree, latency, adjusted_variable = NULL,
-                    adjusted_model = NULL){
+                    adjusted_model = NULL, id = "id"){
+
+  # rename the id column to "id"
+  names(data)[names(data) == id] <- "id"
+
   # extract time-varying exposures
   X <- data[,exposure]
   X <- as.matrix(X)
@@ -36,7 +43,7 @@ CoxPoly <- function(data, time_start, time_end, status, exposure, degree, latenc
   }
   Sum_k <- data.frame(Sum_k)
 
-  regression_data <- data.frame(data[,c(time_start, time_end, status,adjusted_variable)], Sum, Sum_k)
+  regression_data <- data.frame(data[,c(time_start, time_end, status,adjusted_variable, "id")], Sum, Sum_k)
 
   names(regression_data)[  names(regression_data) == "Sum"] <- "X0"
 
@@ -50,7 +57,8 @@ CoxPoly <- function(data, time_start, time_end, status, exposure, degree, latenc
 
   fit <- coxph(as.formula(model),
                data = regression_data,
-               control = coxph.control(timefix = FALSE))
+               control = coxph.control(timefix = FALSE),
+               cluster = id)
   return(fit)
 }
 

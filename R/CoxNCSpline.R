@@ -10,6 +10,9 @@
 #' @param exposure Name of the time-varying exposure variable. From the most recent to the furthest in time.
 #' @param knots_number Pre-specified number of knots
 #' @param latency prespecified latency
+#' @param adjusted_variable A vector of adjusted variables
+#' @param adjusted_model A vector of adjusted models
+#' @param id A string to specify the name of the id column
 #' @return A list. The first element is the best knots with the lowest AIC. The second element is a Cox model
 #' @export
 #' @examples
@@ -24,7 +27,10 @@
 
 
 CoxNCSpline <- function(data, time_start, time_end, status, exposure,knots_number, latency,
-                        adjusted_variable = NULL, adjusted_model = NULL){
+                        adjusted_variable = NULL, adjusted_model = NULL, id = "id"){
+  # rename the id column to "id"
+  names(data)[names(data) == id] <- "id"
+
   # extract time-varying exposures
   X <- data[,exposure]
   X <- as.matrix(X)
@@ -57,7 +63,7 @@ CoxNCSpline <- function(data, time_start, time_end, status, exposure,knots_numbe
 
    # specify the full model
    # then make a data frame to fit the regression
-   regression_data <- cbind(data[,c(time_start, time_end, status,adjusted_variable)],  Sum_mat )
+   regression_data <- cbind(data[,c(time_start, time_end, status,adjusted_variable, "id")],  Sum_mat )
 
    model <- paste0("Surv(", time_start, ",", time_end, ",", status, ")")
    # include the cumulative exposure name
@@ -68,7 +74,8 @@ CoxNCSpline <- function(data, time_start, time_end, status, exposure,knots_numbe
   # run Cox regression.
   fit <- coxph(as.formula(model),
                data = regression_data,
-               control = coxph.control(timefix = FALSE))
+               control = coxph.control(timefix = FALSE),
+               cluster = id)
   list(knots, fit) %>% return()
 }
 
