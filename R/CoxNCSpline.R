@@ -108,10 +108,10 @@ extract_CoxNCSpline  <- function(fit, lag, latency) {
 
   # first we want to extract the coefficient for the exposure
   # we extract the coefficients with "VX", where X stands for numbers
-  coef <- coef[stringr::str_extract(names(coef), "\\bV\\d+\\b")]
+  coef <- coef[stringr::str_detect(names(coef), "\\bV\\d+\\b")]
 
-  vcov <- vcov[stringr::str_extract(names(coef), "\\bV\\d+\\b"),
-               stringr::str_extract(names(coef), "\\bV\\d+\\b")]
+  vcov <- vcov[names(coef),
+               names(coef)]
   # make a function
   B <- matrix(NA, nrow = latency, ncol = length(knots) )
   # the first column of B matrix is the intercept, and thus, is 1
