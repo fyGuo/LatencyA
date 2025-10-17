@@ -87,8 +87,8 @@ extract_CoxPoly <- function(fit, lag) {
   coef <- coef[stringr::str_detect(names(coef), "\\bX\\d+\\b")]
 
 
-  vcov <- vcov[stringr::str_detect(names(coef), "\\bX\\d+\\b"),
-               stringr::str_detect(names(coef), "\\bX\\d+\\b")]
+  vcov <- vcov[names(coef),
+               names(coef)]
 
   K <- length(coef) - 1
 
