@@ -117,7 +117,6 @@ extract_CoxTermsearch  <- function(fit, lag, latency, knots) {
   if (is.null(coef)){
     log_HR = 0
   } else {
-
     # check terms that is used in the final model
     s <- stringr::str_extract(names(coef), "\\d+\\b") %>% as.numeric()
 
@@ -132,7 +131,9 @@ extract_CoxTermsearch  <- function(fit, lag, latency, knots) {
     B[, 2:dim(B)[2]] <- as.matrix(spline)
 
     # select B columns only selected into the final model
-    B_lag <- B[which(B[,2] == lag), s]
+    B_lag <- B[which(B[,2] %in%lag), s]
+    # if we give more than one lag time, then it is a cumulative one and we add them up.
+    if (length(lag) > 1) B_lag <- colSums(B_lag)
 
     log_HR <- t(coef) %*% B_lag
   }

@@ -91,8 +91,16 @@ extract_CoxPoly <- function(fit, lag) {
                names(coef)]
 
   K <- length(coef) - 1
+  # if we give more than one lag time, then it is a cumulative one and we add them up.
 
-  B_lag <- c(1,  lag^(1:K))
+  if (length(lag) > 1) {
+    B_lag <- numeric(length = (1+K))
+    for (i in 1:length(lag)) {
+      B_lag  <- B_lag + c(1,  lag[i]^(1:K))
+    }
+  } else { #otherwise, it is still a one-dimensional lag
+    B_lag <- c(1,  lag^(1:K))
+  }
 
   log_HR_estimate <- t(coef) %*% B_lag
   log_HR_var <- t(B_lag) %*% vcov %*% B_lag

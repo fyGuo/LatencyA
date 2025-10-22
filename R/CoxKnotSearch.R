@@ -122,7 +122,9 @@ extract_CoxKnotsearch  <- function(fit, lag, latency) {
   B[, 2:length(knots)] <- as.matrix(spline)
 
   # the second column of B is the lag time
-  B_lag <- B[which(B[,2] == lag), ]
+  B_lag <- B[which(B[,2] %in% lag), ]
+  # if we give more than one lag time, then it is a cumulative one and we add them up.
+  if (length(lag) > 1) B_lag <- colSums(B_lag)
 
   log_HR <- t(coef) %*% B_lag
 
