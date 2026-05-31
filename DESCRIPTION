@@ -1,7 +1,7 @@
 Package: LatencyA
 Type: Package
 Title: A Package for Latency Analysis in Epidemiological Studies
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: c(person(given = "Fuyu",family = "Guo",email = "fuyuguo@hsph.harvard.edu", role = c("aut", "cre")),
     person(given = "Zihan", family = "Qian", email = "zqian2@mgh.harvard.edu", role =  "aut"),
     person(given = "Molin", family = "Wang", email = "stmow@channing.harvard.edu", role =  "aut"))
