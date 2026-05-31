@@ -31,6 +31,10 @@ CoxKnotsearch(
 \item{knots_number}{A vector of potential number of knots}
 
 \item{latency}{pre-specified latency}
+
+\item{adjusted_variable}{A vector of adjusted variables}
+
+\item{adjusted_model}{A vector of adjusted models}
 }
 \value{
 A list. The first element is the best knots with the lowest AIC. The second element is a Cox model
@@ -44,7 +48,8 @@ time_start <- "age_start"
 time_end <- "age_end"
 status <- "failure"
 exposure <- paste0("lag", 0:19)
-knots_number <- c(3,4,5)
+# knots can be set as as a vector of potential number of knots, here we use 3 to save time
+knots_number <- c(3)
 latency <- 20
 fit <- CoxKnotsearch(sim_data, time_start, time_end, status, exposure, knots_number, latency)
 }

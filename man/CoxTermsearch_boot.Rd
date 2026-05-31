@@ -58,14 +58,15 @@ time_start <- "age_start"
 time_end <- "age_end"
 status <- "failure"
 exposure <- paste0("lag", 0:15)
-knots <- 0:15
+knots <- seq(0, 15, by = 3)
 latency <- 16
 adjusted_variable <- "L"
 adjusted_model <- "L"
 lag <- 2
-boot_iter <- 10
+boot_iter <- 1
 id <- "id"
 parallel <- TRUE
-result <- CoxTermsearch_boot(sim_data, time_start, time_end, status, exposure, knots = knots, latency,
+result <- CoxTermsearch_boot(sim_data, time_start, time_end, 
+status, exposure, knots = knots, latency,
 lag = lag, parallel = parallel, boot_iter = boot_iter, id = id)
 }

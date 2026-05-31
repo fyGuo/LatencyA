@@ -58,14 +58,16 @@ time_start <- "age_start"
 time_end <- "age_end"
 status <- "failure"
 exposure <- paste0("lag", 0:15)
-knots_number <- c(3,4,5)
+# knots can be set as as a vector of potential number of knots, here we use 3 to save time
+knots_number <- c(3)
 latency <- 16
 adjusted_variable <- "L"
 adjusted_model <- "L"
 lag <- 2
-boot_iter <- 10
+boot_iter <- 1
 id <- "id"
 parallel <- TRUE
-result <- CoxKnotsearch_boot(sim_data, time_start, time_end, status, exposure, knots_number = knots_number, latency,
+result <- CoxKnotsearch_boot(sim_data, time_start, time_end, status, 
+exposure, knots_number = knots_number, latency,
 lag = lag, parallel = parallel, boot_iter = boot_iter, id = id)
 }

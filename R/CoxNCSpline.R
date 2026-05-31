@@ -1,7 +1,6 @@
 #' This function implments natural cubic splines in Cox regression for latency analysis
-#' @import survival
-#' @import Hmisc
-#' @import dplyr
+#' @importFrom survival coxph coxph.control
+#' @importFrom Hmisc rcspline.eval
 #' @import stats
 #' @param data A data frame containing the data
 #' @param time_start start time
@@ -76,7 +75,7 @@ CoxNCSpline <- function(data, time_start, time_end, status, exposure,knots_numbe
                data = regression_data,
                control = coxph.control(timefix = FALSE),
                cluster = id)
-  list(knots, fit) %>% return()
+  return(list(knots, fit))
 }
 
 
@@ -127,6 +126,6 @@ extract_CoxNCSpline  <- function(fit, lag, latency) {
   log_HR_estimate <- t(coef) %*% B_lag
   log_HR_var <- t(B_lag) %*% vcov %*% B_lag
 
-  data.frame(log_HR = log_HR_estimate, log_HR_var = log_HR_var) %>% return()
+  return(data.frame(log_HR = log_HR_estimate, log_HR_var = log_HR_var))
 }
 

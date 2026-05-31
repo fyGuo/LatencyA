@@ -1,15 +1,18 @@
 Package: LatencyA
 Type: Package
-Title: What the Package Does (Title Case)
+Title: A Package for Latency Analysis in Epidemiological Studies
 Version: 0.1.0
-Author: Fuyu Guo
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-Imports: survival, Hmisc, dplyr, stats, MASS, stringr, future, furrr
-License: What license is it under?
+Authors@R: c(person(given = "Fuyu",family = "Guo",email = "fuyuguo@hsph.harvard.edu", role = c("aut", "cre")),
+    person(given = "Zihan", family = "Qian", email = "zqian2@mgh.harvard.edu", role =  "aut"),
+    person(given = "Molin", family = "Wang", email = "stmow@channing.harvard.edu", role =  "aut"))
+Maintainer: Fuyu Guo <fuyuguo@hsph.harvard.edu>
+Description: Used for latency analysis in epidemiological studies. The
+    current package allows users to use splines to model the relationship between time-varying exposures and health outcomes.
+    The current package also allows for automatic model selection for users.
+Imports: Hmisc, survival, stats, MASS, stringr, future, furrr
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.3
 Depends: 
-    R (>= 2.10)
+    R (>= 4.1.0)
+Config/roxygen2/version: 8.0.0

@@ -48,7 +48,7 @@ time_start <- "age_start"
 time_end <- "age_end"
 status <- "failure"
 exposure <- paste0("lag", 0:15)
-knots <- 0:15
+knots <- seq(0, 15, by = 3)
 latency <- 16
 adjusted_variable <- "L"
 adjusted_model <- "L"

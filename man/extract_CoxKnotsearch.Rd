@@ -24,7 +24,8 @@ time_start <- "age_start"
 time_end <- "age_end"
 status <- "failure"
 exposure <- paste0("lag", 0:19)
-knots_number <- c(3,4,5)
+# knots can be set as as a vector of potential number of knots, here we use 3 to save time
+knots_number <- c(3)
 latency <- 20
 fit <- CoxKnotsearch(sim_data, time_start, time_end, status, exposure, knots_number, latency)
 extract_CoxKnotsearch(fit, 10, latency = latency)

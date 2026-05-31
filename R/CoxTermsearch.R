@@ -1,8 +1,7 @@
 #' This function implments Stepwise model selection by terms of natural cubic splines in Cox regression for latency analysis
 #' This is GreadSearching by knots
-#' @import survival
-#' @import Hmisc
-#' @import dplyr
+#' @importFrom survival coxph coxph.control
+#' @importFrom Hmisc rcspline.eval
 #' @import stats
 #' @importFrom MASS stepAIC
 #' @param data A data frame containing the data
@@ -21,7 +20,7 @@
 #' time_end <- "age_end"
 #' status <- "failure"
 #' exposure <- paste0("lag", 0:15)
-#' knots <- 0:15
+#' knots <- seq(0, 15, by = 3)
 #' latency <- 16
 #' adjusted_variable <- "L"
 #' adjusted_model <- "L"
@@ -88,7 +87,7 @@ CoxTermsearch <- function(data, time_start, time_end, status, exposure,
 #' time_end <- "age_end"
 #' status <- "failure"
 #' exposure <- paste0("lag", 0:19)
-#' knots <- 0:19
+#' knots <- seq(0, 15, by = 3)
 #' latency <- 20
 #' fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency)
 #' extract_CoxTermsearch(fit, 10, latency = latency, knot = knots)
@@ -118,7 +117,7 @@ extract_CoxTermsearch  <- function(fit, lag, latency, knots) {
     log_HR = 0
   } else {
     # check terms that is used in the final model
-    s <- stringr::str_extract(names(coef), "\\d+\\b") %>% as.numeric()
+    s <- stringr::str_extract(names(coef), "\\d+\\b") |> as.numeric()
 
     # make the B matrix
     v <- 0:(latency - 1)
@@ -144,9 +143,8 @@ extract_CoxTermsearch  <- function(fit, lag, latency, knots) {
 }
 
 #' This function conduct bootstraps for @CoxTermsearch
-#' @import survival
-#' @import Hmisc
-#' @import dplyr
+#' @importFrom survival coxph coxph.control
+#' @importFrom Hmisc rcspline.eval
 #' @import stats
 #' @import future
 #' @import furrr
@@ -171,43 +169,44 @@ extract_CoxTermsearch  <- function(fit, lag, latency, knots) {
 #' time_end <- "age_end"
 #' status <- "failure"
 #' exposure <- paste0("lag", 0:15)
-#' knots <- 0:15
+#' knots <- seq(0, 15, by = 3)
 #' latency <- 16
 #' adjusted_variable <- "L"
 #' adjusted_model <- "L"
 #' lag <- 2
-#' boot_iter <- 10
+#' boot_iter <- 1
 #' id <- "id"
 #' parallel <- TRUE
-#' result <- CoxTermsearch_boot(sim_data, time_start, time_end, status, exposure, knots = knots, latency,
+#' result <- CoxTermsearch_boot(sim_data, time_start, time_end, 
+#' status, exposure, knots = knots, latency,
 #' lag = lag, parallel = parallel, boot_iter = boot_iter, id = id)
 
 CoxTermsearch_boot  <- function(data, time_start, time_end, status, exposure,
                            knots, latency, adjusted_variable = NULL, adjusted_model = NULL,
                            lag, parallel = FALSE, boot_iter = 10, id = "id") {
-  ids <- unique(sim_data[,id])
+  ids <- unique(data[,id])
   if (parallel == FALSE) {
     log_HR <- numeric(boot_iter)
     for (i in 1:boot_iter) {
       boot_ids <- sample(ids, size = length(ids), replace = TRUE)
-      data<-sim_data[ sim_data[,id]  %in% boot_ids,]
+      data<-data[data[,id]  %in% boot_ids,]
       fit <- CoxTermsearch(data, time_start, time_end, status, exposure, knots = knots, latency)
       log_HR[i] <- extract_CoxTermsearch(fit, lag, latency, knots)
     }
 
-    data.frame(log_HR = mean(log_HR), log_HR_var = var(log_HR)) %>% return()
+    return(data.frame(log_HR = mean(log_HR), log_HR_var = var(log_HR)))
   } else{
     plan("multicore")
     log_HR <- furrr::future_map_dbl(1:boot_iter, ~{
       boot_ids <- sample(ids, size = length(ids), replace = TRUE)
-      data<-sim_data[ sim_data[,id]  %in% boot_ids,]
+      data<-data[data[,id]  %in% boot_ids,]
       fit <- CoxTermsearch(data, time_start, time_end, status, exposure, knots = knots, latency)
       log_HR <- extract_CoxTermsearch(fit, lag, latency, knots)
       return(log_HR)
     },
     .options = furrr_options(seed = T))
 
-    data.frame(log_HR = mean(log_HR), log_HR_var = var(log_HR)) %>% return()
+    return(data.frame(log_HR = mean(log_HR), log_HR_var = var(log_HR)))
   }
 }
 

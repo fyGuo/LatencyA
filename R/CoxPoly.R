@@ -1,5 +1,5 @@
 #' This is a function to implement polynomial Cox regression for latency analysis
-#' @import survival
+#' @importFrom survival coxph coxph.control
 #' @param data A data frame containing the data
 #' @param time_start start time
 #' @param time_end end time
@@ -106,7 +106,7 @@ extract_CoxPoly <- function(fit, lag) {
   log_HR_var <- t(B_lag) %*% vcov %*% B_lag
 
 
-  data.frame(log_HR = log_HR_estimate, log_HR_var = log_HR_var) %>% return()
+  return(data.frame(log_HR = log_HR_estimate, log_HR_var = log_HR_var)) 
 }
 
 

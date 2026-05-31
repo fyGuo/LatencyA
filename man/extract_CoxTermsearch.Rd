@@ -26,7 +26,7 @@ time_start <- "age_start"
 time_end <- "age_end"
 status <- "failure"
 exposure <- paste0("lag", 0:19)
-knots <- 0:19
+knots <- seq(0, 15, by = 3)
 latency <- 20
 fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency)
 extract_CoxTermsearch(fit, 10, latency = latency, knot = knots)
