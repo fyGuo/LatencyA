@@ -13,6 +13,7 @@
 #' @param latency prespecified latency
 #' @param adjusted_variable A vector of adjusted variables
 #' @param adjusted_model A vector of adjusted models
+#' @param criteria A string to specify the criteria for model selection. It can be either "AIC" or "BIC". The default is "AIC"
 #' @return A list. The first element is the best knots with the lowest AIC. The second element is a Cox model
 #' @export
 #' @examples
@@ -34,7 +35,8 @@
 #' adjusted_variable = adjusted_variable, adjusted_model = adjusted_model)
 #' #L is selected into the final model but L^2 was not
 CoxTermsearch <- function(data, time_start, time_end, status, exposure,
-                          knots, latency, adjusted_variable = NULL, adjusted_model = NULL) {
+                          knots, latency, adjusted_variable = NULL, adjusted_model = NULL,
+                          criteria = "AIC") {
   X <- data[,exposure]
   X <- as.matrix(X)
 
@@ -68,8 +70,11 @@ CoxTermsearch <- function(data, time_start, time_end, status, exposure,
   full_model <- coxph(as.formula(model),
                       data = regression_data,
                       control = coxph.control(timefix = FALSE))
-
-  fit_best <- stepAIC(full_model, direction = "both", trace = FALSE)
+  if (criteria == "AIC") {
+    fit_best <- stepAIC(full_model, direction = "both", trace = FALSE)
+  } else if (criteria == "BIC") {
+    fit_best <- stepAIC(full_model, direction = "both", trace = FALSE, k = log(nrow(regression_data)))
+  }
 
   return(fit_best)
 }
@@ -162,7 +167,9 @@ extract_CoxTermsearch  <- function(fit, lag, latency, knots) {
 #' @param parallel A boolean numeric to indicate whether to run the function in parallel
 #' @param boot_iter Number of bootstrap iterations
 #' @param id A string of the column name that contains the subject ID
-#' @return A data.frame. The first column is the mean of log HR. The second column is the variance of log HR
+#' @param criteria A string to specify the criteria for model selection. It can be either "AIC" or "BIC". The default is "AIC"
+#' @return A data.frame. The first column is the mean of log HR. The second column is the variance of log HR, the third and
+#' fourth columns are the 2.5 and 97.5 percentiles of log HR if parallel = TRUE
 #' @export
 #' @examples
 #' time_start <- "age_start"
@@ -183,30 +190,38 @@ extract_CoxTermsearch  <- function(fit, lag, latency, knots) {
 
 CoxTermsearch_boot  <- function(data, time_start, time_end, status, exposure,
                            knots, latency, adjusted_variable = NULL, adjusted_model = NULL,
-                           lag, parallel = FALSE, boot_iter = 10, id = "id") {
+                           lag, parallel = FALSE, boot_iter = 10, id = "id", criteria = "AIC") {
   ids <- unique(data[,id])
   if (parallel == FALSE) {
     log_HR <- numeric(boot_iter)
     for (i in 1:boot_iter) {
       boot_ids <- sample(ids, size = length(ids), replace = TRUE)
       data<-data[data[,id]  %in% boot_ids,]
-      fit <- CoxTermsearch(data, time_start, time_end, status, exposure, knots = knots, latency)
+      fit <- CoxTermsearch(data, time_start, time_end, status, exposure, knots = knots, latency,
+                           adjusted_variable = adjusted_variable, adjusted_model = adjusted_model, criteria = criteria)
       log_HR[i] <- extract_CoxTermsearch(fit, lag, latency, knots)
     }
 
-    return(data.frame(log_HR = mean(log_HR), log_HR_var = var(log_HR)))
+    return(data.frame(median_log_HR = median(log_HR), 
+                      log_HR_var = var(log_HR),
+                     percentile_2.5 = quantile(log_HR, 0.025),
+                     percentile_97.5 = quantile(log_HR, 0.975)))
   } else{
     plan("multicore")
     log_HR <- furrr::future_map_dbl(1:boot_iter, ~{
       boot_ids <- sample(ids, size = length(ids), replace = TRUE)
       data<-data[data[,id]  %in% boot_ids,]
-      fit <- CoxTermsearch(data, time_start, time_end, status, exposure, knots = knots, latency)
+      fit <- CoxTermsearch(data, time_start, time_end, status, exposure, knots = knots, latency,
+                           adjusted_variable = adjusted_variable, adjusted_model = adjusted_model, criteria = criteria)
       log_HR <- extract_CoxTermsearch(fit, lag, latency, knots)
       return(log_HR)
     },
     .options = furrr_options(seed = T))
 
-    return(data.frame(log_HR = mean(log_HR), log_HR_var = var(log_HR)))
+    return(data.frame(median_log_HR = median(log_HR), 
+                      log_HR_var = var(log_HR),
+                     percentile_2.5 = quantile(log_HR, 0.025),
+                     percentile_97.5 = quantile(log_HR, 0.975)))
   }
 }
 

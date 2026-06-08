@@ -17,7 +17,8 @@ CoxTermsearch_boot(
   lag,
   parallel = FALSE,
   boot_iter = 10,
-  id = "id"
+  id = "id",
+  criteria = "AIC"
 )
 }
 \arguments{
@@ -46,9 +47,12 @@ CoxTermsearch_boot(
 \item{boot_iter}{Number of bootstrap iterations}
 
 \item{id}{A string of the column name that contains the subject ID}
+
+\item{criteria}{A string to specify the criteria for model selection. It can be either "AIC" or "BIC". The default is "AIC"}
 }
 \value{
-A data.frame. The first column is the mean of log HR. The second column is the variance of log HR
+A data.frame. The first column is the mean of log HR. The second column is the variance of log HR, the third and
+fourth columns are the 2.5 and 97.5 percentiles of log HR if parallel = TRUE
 }
 \description{
 This function conduct bootstraps for @CoxTermsearch

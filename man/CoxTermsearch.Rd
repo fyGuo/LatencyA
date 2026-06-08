@@ -14,7 +14,8 @@ CoxTermsearch(
   knots,
   latency,
   adjusted_variable = NULL,
-  adjusted_model = NULL
+  adjusted_model = NULL,
+  criteria = "AIC"
 )
 }
 \arguments{
@@ -35,6 +36,8 @@ CoxTermsearch(
 \item{adjusted_variable}{A vector of adjusted variables}
 
 \item{adjusted_model}{A vector of adjusted models}
+
+\item{criteria}{A string to specify the criteria for model selection. It can be either "AIC" or "BIC". The default is "AIC"}
 }
 \value{
 A list. The first element is the best knots with the lowest AIC. The second element is a Cox model

@@ -12,6 +12,7 @@
 #' @param latency pre-specified latency
 #' @param adjusted_variable A vector of adjusted variables
 #' @param adjusted_model A vector of adjusted models
+#' @param criteria A string to specify the criteria for model selection. It can be either "AIC" or "BIC". The default is "AIC"
 #' @return A list. The first element is the best knots with the lowest AIC. The second element is a Cox model
 #' @export
 #' @examples
@@ -24,7 +25,8 @@
 #' latency <- 20
 #' fit <- CoxKnotsearch(sim_data, time_start, time_end, status, exposure, knots_number, latency)
 CoxKnotsearch <- function(data, time_start, time_end, status, exposure,
-                          knots_number, latency, adjusted_variable = NULL, adjusted_model = NULL) {
+                          knots_number, latency, adjusted_variable = NULL, adjusted_model = NULL,
+                          criteria = "AIC") {
   X <- data[,exposure]
   X <- as.matrix(X)
 
@@ -77,7 +79,11 @@ CoxKnotsearch <- function(data, time_start, time_end, status, exposure,
       fit <- coxph(as.formula(model),
                    data = regression_data,
                    control = coxph.control(timefix = FALSE))
-      AIC <- extractAIC(fit)[2]
+      if (criteria == "AIC") {
+        AIC <- extractAIC(fit)[2]
+      } else if (criteria == "BIC") {
+        AIC <- extractAIC(fit, k = log(nrow(regression_data)))[2]
+      }
       if (AIC < mini_AIC) {
         mini_AIC <- AIC
         fit_best <- fit
@@ -154,7 +160,8 @@ extract_CoxKnotsearch  <- function(fit, lag, latency) {
 #' @param parallel A boolean numeric to indicate whether to run the function in parallel
 #' @param boot_iter Number of bootstrap iterations
 #' @param id A string of the column name that contains the subject ID
-#' @return A data.frame. The first column is the mean of log HR. The second column is the variance of log HR
+#' @param criteria A string to specify the criteria for model selection. It can be either "AIC" or "BIC". The default is "AIC"
+#' @return A data.frame. The first column is the mean of log HR. The second column is the variance of log HR, the third and fourth columns are the 2.5 and 97.5 percentiles of log HR if parallel = TRUE
 #' @export
 #' @examples
 #' time_start <- "age_start"
@@ -177,30 +184,36 @@ extract_CoxKnotsearch  <- function(fit, lag, latency) {
 
 CoxKnotsearch_boot  <- function(data, time_start, time_end, status, exposure,
                                 knots_number, latency, adjusted_variable = NULL, adjusted_model = NULL,
-                                lag, parallel = FALSE, boot_iter = 10, id = "id") {
+                                lag, parallel = FALSE, boot_iter = 10, id = "id", criteria = "AIC") {
   ids <- unique(data[,id])
   if (parallel == FALSE) {
     log_HR <- numeric(boot_iter)
     for (i in 1:boot_iter) {
       boot_ids <- sample(ids, size = length(ids), replace = TRUE)
       data<-data[data[,id]  %in% boot_ids,]
-      fit <- CoxKnotsearch(data, time_start, time_end, status, exposure,  knots_number =  knots_number, latency)
+      fit <- CoxKnotsearch(data, time_start, time_end, status, exposure,  knots_number =  knots_number, latency, criteria = criteria)
       log_HR[i] <- extract_CoxKnotsearch(fit, lag, latency)
     }
 
-    return(data.frame(log_HR = mean(log_HR), log_HR_var = var(log_HR)))
+    return(return(data.frame(median_log_HR = median(log_HR), 
+                      log_HR_var = var(log_HR),
+                     percentile_2.5 = quantile(log_HR, 0.025),
+                     percentile_97.5 = quantile(log_HR, 0.975))))
   } else{
     plan("multicore")
     log_HR <- furrr::future_map_dbl(1:boot_iter, ~{
       boot_ids <- sample(ids, size = length(ids), replace = TRUE)
       data<-data[data[,id]  %in% boot_ids,]
-      fit <- CoxKnotsearch(data, time_start, time_end, status, exposure, knots_number = knots_number, latency)
+      fit <- CoxKnotsearch(data, time_start, time_end, status, exposure, knots_number = knots_number, latency, criteria = criteria)
       log_HR <- extract_CoxKnotsearch(fit, lag, latency)
       return(log_HR)
     },
     .options = furrr_options(seed = T))
 
-    return(data.frame(log_HR = mean(log_HR), log_HR_var = var(log_HR)))
+    return(data.frame(median_log_HR = median(log_HR), 
+                      log_HR_var = var(log_HR),
+                     percentile_2.5 = quantile(log_HR, 0.025),
+                     percentile_97.5 = quantile(log_HR, 0.975)))  
   }
 }
 
