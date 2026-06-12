@@ -191,13 +191,11 @@ extract_CoxTermsearch  <- function(fit, lag, latency, knots) {
 CoxTermsearch_boot  <- function(data, time_start, time_end, status, exposure,
                            knots, latency, adjusted_variable = NULL, adjusted_model = NULL,
                            lag, parallel = FALSE, boot_iter = 10, id = "id", criteria = "AIC") {
-  ids <- unique(data[,id])
   if (parallel == FALSE) {
     log_HR <- numeric(boot_iter)
     for (i in 1:boot_iter) {
-      boot_ids <- sample(ids, size = length(ids), replace = TRUE)
-      data<-data[data[,id]  %in% boot_ids,]
-      fit <- CoxTermsearch(data, time_start, time_end, status, exposure, knots = knots, latency,
+      temp <- resample_clusters(data, id = id)
+      fit <- CoxTermsearch(temp, time_start, time_end, status, exposure, knots = knots, latency,
                            adjusted_variable = adjusted_variable, adjusted_model = adjusted_model, criteria = criteria)
       log_HR[i] <- extract_CoxTermsearch(fit, lag, latency, knots)
     }
@@ -209,9 +207,8 @@ CoxTermsearch_boot  <- function(data, time_start, time_end, status, exposure,
   } else{
     plan("multicore")
     log_HR <- furrr::future_map_dbl(1:boot_iter, ~{
-      boot_ids <- sample(ids, size = length(ids), replace = TRUE)
-      data<-data[data[,id]  %in% boot_ids,]
-      fit <- CoxTermsearch(data, time_start, time_end, status, exposure, knots = knots, latency,
+      temp <- resample_clusters(data, id = id)
+      fit <- CoxTermsearch(temp, time_start, time_end, status, exposure, knots = knots, latency,
                            adjusted_variable = adjusted_variable, adjusted_model = adjusted_model, criteria = criteria)
       log_HR <- extract_CoxTermsearch(fit, lag, latency, knots)
       return(log_HR)

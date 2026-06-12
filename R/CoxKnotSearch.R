@@ -189,9 +189,8 @@ CoxKnotsearch_boot  <- function(data, time_start, time_end, status, exposure,
   if (parallel == FALSE) {
     log_HR <- numeric(boot_iter)
     for (i in 1:boot_iter) {
-      boot_ids <- sample(ids, size = length(ids), replace = TRUE)
-      data<-data[data[,id]  %in% boot_ids,]
-      fit <- CoxKnotsearch(data, time_start, time_end, status, exposure,  knots_number =  knots_number, latency, criteria = criteria)
+      temp<-resample_clusters(data, id = id)
+      fit <- CoxKnotsearch(temp, time_start, time_end, status, exposure,  knots_number =  knots_number, latency, criteria = criteria)
       log_HR[i] <- extract_CoxKnotsearch(fit, lag, latency)
     }
 
@@ -202,9 +201,8 @@ CoxKnotsearch_boot  <- function(data, time_start, time_end, status, exposure,
   } else{
     plan("multicore")
     log_HR <- furrr::future_map_dbl(1:boot_iter, ~{
-      boot_ids <- sample(ids, size = length(ids), replace = TRUE)
-      data<-data[data[,id]  %in% boot_ids,]
-      fit <- CoxKnotsearch(data, time_start, time_end, status, exposure, knots_number = knots_number, latency, criteria = criteria)
+      temp <- resample_clusters(data, id = id)
+      fit <- CoxKnotsearch(temp, time_start, time_end, status, exposure, knots_number = knots_number, latency, criteria = criteria)
       log_HR <- extract_CoxKnotsearch(fit, lag, latency)
       return(log_HR)
     },
