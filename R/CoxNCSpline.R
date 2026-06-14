@@ -81,9 +81,10 @@ CoxNCSpline <- function(data, time_start, time_end, status, exposure,knots_numbe
 
 #' This is a function to extract log HR based on the resuls from CoxNCSpline
 #' @param fit A model from CoxNCSpline
-#' @param lag A value of lag time
+#' @param lag A lag time, or a vector of lag times
 #' @param latency prespecified latency
-#' @return The log HR estimated at that lag time
+#' @return A data frame with one row per lag, giving the estimated log HR and its
+#'   variance at each lag time
 #' @export
 #' @examples
 #' time_start <- "age_start"
@@ -94,6 +95,7 @@ CoxNCSpline <- function(data, time_start, time_end, status, exposure,knots_numbe
 #' latency <- 20
 #' fit <- CoxNCSpline(sim_data, time_start, time_end, status, exposure, knots_number, latency)
 #' extract_CoxNCSpline(fit, 10, latency = latency)
+#' extract_CoxNCSpline(fit, c(0, 5, 10), latency = latency)
 extract_CoxNCSpline  <- function(fit, lag, latency) {
 
   #extract the knots
@@ -118,14 +120,15 @@ extract_CoxNCSpline  <- function(fit, lag, latency) {
   spline <- rcspline.eval(0:(latency - 1), inclx = TRUE, knots = knots)
   B[, 2:length(knots)] <- as.matrix(spline)
 
-  # the second column of B is the lag time
-  B_lag <- B[which(B[,2] %in%lag), ]
+  # one row of the basis per requested lag (drop = FALSE keeps it a matrix even
+  # for a single lag, so the scalar case is just the 1-row case)
+  B_lag <- B[match(lag, 0:(latency - 1)), , drop = FALSE]
 
-  # if we give more than one lag time, then it is a cumulative one and we add them up.
-  if (length(lag) > 1) B_lag <- colSums(B_lag)
-  log_HR_estimate <- t(coef) %*% B_lag
-  log_HR_var <- t(B_lag) %*% vcov %*% B_lag
+  # log HR at each lag, and the per-lag variance from the diagonal of
+  # B_lag %*% vcov %*% t(B_lag), computed without forming the full product
+  log_HR <- as.vector(B_lag %*% coef)
+  log_HR_var <- rowSums((B_lag %*% vcov) * B_lag)
 
-  return(data.frame(log_HR = log_HR_estimate, log_HR_var = log_HR_var))
+  return(data.frame(lag = lag, log_HR = log_HR, log_HR_var = log_HR_var))
 }
 

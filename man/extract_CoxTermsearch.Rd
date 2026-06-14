@@ -9,14 +9,14 @@ extract_CoxTermsearch(fit, lag, latency, knots)
 \arguments{
 \item{fit}{A model from CoxKnotsearch}
 
-\item{lag}{A value of lag time}
+\item{lag}{A lag time, or a vector of lag times}
 
 \item{latency}{prespecified latency}
 
 \item{knots}{A vector of prespecified knots}
 }
 \value{
-The log HR estimated at that lag time
+A data frame with one row per lag, giving the estimated log HR at each lag time
 }
 \description{
 This is a function to extract log HR based on the resuls from CoxTermsearch
@@ -30,6 +30,7 @@ knots <- seq(0, 15, by = 3)
 latency <- 20
 fit <- CoxTermsearch(sim_data, time_start, time_end, status, exposure, knots = knots, latency)
 extract_CoxTermsearch(fit, 10, latency = latency, knot = knots)
+extract_CoxTermsearch(fit, c(0, 5, 10), latency = latency, knot = knots)
 #In this example, we will generate a random covariate L and adjust for it in our model
 sim_data$L <- rbinom(nrow(sim_data), 1, 0.5)
 adjusted_variable <- "L"

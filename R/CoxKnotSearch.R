@@ -97,9 +97,9 @@ CoxKnotsearch <- function(data, time_start, time_end, status, exposure,
 
 #' This is a function to extract log HR based on the resuls from CoxKnotsearch
 #' @param fit A model from CoxKnotsearch
-#' @param lag A value of lag time
+#' @param lag A lag time, or a vector of lag times
 #' @param latency prespecified latency
-#' @return The log HR estimated at that lag time
+#' @return A data frame with one row per lag, giving the estimated log HR at each lag time
 #' @export
 #' @examples
 #' time_start <- "age_start"
@@ -111,6 +111,7 @@ CoxKnotsearch <- function(data, time_start, time_end, status, exposure,
 #' latency <- 20
 #' fit <- CoxKnotsearch(sim_data, time_start, time_end, status, exposure, knots_number, latency)
 #' extract_CoxKnotsearch(fit, 10, latency = latency)
+#' extract_CoxKnotsearch(fit, c(0, 5, 10), latency = latency)
 extract_CoxKnotsearch  <- function(fit, lag, latency) {
 
   #extract the knots
@@ -130,14 +131,13 @@ extract_CoxKnotsearch  <- function(fit, lag, latency) {
   spline <- rcspline.eval(0:(latency-1), inclx = TRUE, knots = knots)
   B[, 2:length(knots)] <- as.matrix(spline)
 
-  # the second column of B is the lag time
-  B_lag <- B[which(B[,2] %in% lag), ]
-  # if we give more than one lag time, then it is a cumulative one and we add them up.
-  if (length(lag) > 1) B_lag <- colSums(B_lag)
+  # one row of the basis per requested lag (drop = FALSE keeps it a matrix even
+  # for a single lag, so the scalar case is just the 1-row case)
+  B_lag <- B[match(lag, 0:(latency - 1)), , drop = FALSE]
 
-  log_HR <- t(coef) %*% B_lag
+  log_HR <- as.vector(B_lag %*% coef)
 
-  return(log_HR)
+  return(data.frame(lag = lag, log_HR = log_HR))
 }
 
 #' This function conduct bootstraps for @CoxKnotsearch
@@ -158,6 +158,7 @@ extract_CoxKnotsearch  <- function(fit, lag, latency) {
 #' @param adjusted_model A vector of adjusted models
 #' @param lag A value of lag time
 #' @param parallel A boolean numeric to indicate whether to run the function in parallel
+#' @param parallel_plan A string to specify the future plan used when parallel = TRUE. It can be either "multicore" or "multisession". The default is "multicore"
 #' @param boot_iter Number of bootstrap iterations
 #' @param id A string of the column name that contains the subject ID
 #' @param criteria A string to specify the criteria for model selection. It can be either "AIC" or "BIC". The default is "AIC"
@@ -184,14 +185,16 @@ extract_CoxKnotsearch  <- function(fit, lag, latency) {
 
 CoxKnotsearch_boot  <- function(data, time_start, time_end, status, exposure,
                                 knots_number, latency, adjusted_variable = NULL, adjusted_model = NULL,
-                                lag, parallel = FALSE, boot_iter = 10, id = "id", criteria = "AIC") {
+                                lag, parallel = FALSE, parallel_plan = c("multicore", "multisession"),
+                                boot_iter = 10, id = "id", criteria = "AIC") {
+  parallel_plan <- match.arg(parallel_plan)
   ids <- unique(data[,id])
   if (parallel == FALSE) {
     log_HR <- numeric(boot_iter)
     for (i in 1:boot_iter) {
       temp<-resample_clusters(data, id = id)
       fit <- CoxKnotsearch(temp, time_start, time_end, status, exposure,  knots_number =  knots_number, latency, criteria = criteria)
-      log_HR[i] <- extract_CoxKnotsearch(fit, lag, latency)
+      log_HR[i] <- extract_CoxKnotsearch(fit, lag, latency)$log_HR
     }
 
     return(return(data.frame(median_log_HR = median(log_HR), 
@@ -199,11 +202,11 @@ CoxKnotsearch_boot  <- function(data, time_start, time_end, status, exposure,
                      percentile_2.5 = quantile(log_HR, 0.025),
                      percentile_97.5 = quantile(log_HR, 0.975))))
   } else{
-    plan("multicore")
+    plan(parallel_plan)
     log_HR <- furrr::future_map_dbl(1:boot_iter, ~{
       temp <- resample_clusters(data, id = id)
       fit <- CoxKnotsearch(temp, time_start, time_end, status, exposure, knots_number = knots_number, latency, criteria = criteria)
-      log_HR <- extract_CoxKnotsearch(fit, lag, latency)
+      log_HR <- extract_CoxKnotsearch(fit, lag, latency)$log_HR
       return(log_HR)
     },
     .options = furrr_options(seed = T))

@@ -16,6 +16,7 @@ CoxKnotsearch_boot(
   adjusted_model = NULL,
   lag,
   parallel = FALSE,
+  parallel_plan = c("multicore", "multisession"),
   boot_iter = 10,
   id = "id",
   criteria = "AIC"
@@ -43,6 +44,8 @@ CoxKnotsearch_boot(
 \item{lag}{A value of lag time}
 
 \item{parallel}{A boolean numeric to indicate whether to run the function in parallel}
+
+\item{parallel_plan}{A string to specify the future plan used when parallel = TRUE. It can be either "multicore" or "multisession". The default is "multicore"}
 
 \item{boot_iter}{Number of bootstrap iterations}
 

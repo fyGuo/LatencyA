@@ -9,10 +9,11 @@ extract_CoxPoly(fit, lag)
 \arguments{
 \item{fit}{A model from CoxPoly}
 
-\item{lag}{A value of lag time}
+\item{lag}{A lag time, or a vector of lag times}
 }
 \value{
-The log HR estimated at that lag time
+A data frame with one row per lag, giving the estimated log HR and its
+  variance at each lag time
 }
 \description{
 This is a function to extract log HR based on the resuls from CoxPoly
@@ -26,4 +27,5 @@ degree <- 3
 latency <- 20
 fit <- CoxPoly(sim_data, time_start, time_end, status, exposure, degree, latency)
 extract_CoxPoly(fit, 10)
+extract_CoxPoly(fit, c(0, 5, 10))
 }

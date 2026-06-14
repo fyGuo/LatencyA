@@ -64,8 +64,9 @@ CoxPoly <- function(data, time_start, time_end, status, exposure, degree, latenc
 
 #' This is a function to extract log HR based on the resuls from CoxPoly
 #' @param fit A model from CoxPoly
-#' @param lag A value of lag time
-#' @return The log HR estimated at that lag time
+#' @param lag A lag time, or a vector of lag times
+#' @return A data frame with one row per lag, giving the estimated log HR and its
+#'   variance at each lag time
 #' @export
 #' @examples
 #' time_start <- "age_start"
@@ -76,8 +77,8 @@ CoxPoly <- function(data, time_start, time_end, status, exposure, degree, latenc
 #' latency <- 20
 #' fit <- CoxPoly(sim_data, time_start, time_end, status, exposure, degree, latency)
 #' extract_CoxPoly(fit, 10)
+#' extract_CoxPoly(fit, c(0, 5, 10))
 extract_CoxPoly <- function(fit, lag) {
-  # extract the coefficients
   # extract the coefficients
   coef <- coef(fit)
 
@@ -91,22 +92,18 @@ extract_CoxPoly <- function(fit, lag) {
                names(coef)]
 
   K <- length(coef) - 1
-  # if we give more than one lag time, then it is a cumulative one and we add them up.
 
-  if (length(lag) > 1) {
-    B_lag <- numeric(length = (1+K))
-    for (i in 1:length(lag)) {
-      B_lag  <- B_lag + c(1,  lag[i]^(1:K))
-    }
-  } else { #otherwise, it is still a one-dimensional lag
-    B_lag <- c(1,  lag^(1:K))
-  }
+  # one polynomial-basis row per requested lag: row i is c(1, lag[i], ..., lag[i]^K).
+  # outer() keeps it a matrix even for a single lag, so the scalar case is just
+  # the 1-row case.
+  B_lag <- outer(lag, 0:K, "^")
 
-  log_HR_estimate <- t(coef) %*% B_lag
-  log_HR_var <- t(B_lag) %*% vcov %*% B_lag
+  # log HR at each lag, and the per-lag variance from the diagonal of
+  # B_lag %*% vcov %*% t(B_lag), computed without forming the full product
+  log_HR <- as.vector(B_lag %*% coef)
+  log_HR_var <- rowSums((B_lag %*% vcov) * B_lag)
 
-
-  return(data.frame(log_HR = log_HR_estimate, log_HR_var = log_HR_var)) 
+  return(data.frame(lag = lag, log_HR = log_HR, log_HR_var = log_HR_var))
 }
 
 
