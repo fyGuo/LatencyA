@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 .claude/settings.local.json
+*.Rcheck/
+revdep/
+.DS_Store
